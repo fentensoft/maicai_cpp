@@ -7,7 +7,7 @@ namespace notification {
 
 BarkNotifierImpl::BarkNotifierImpl(std::string bark_id)
     : bark_id_(std::move(bark_id)) {
-  spdlog::info("Bark notifier initialized with bark_id {}", bark_id);
+  spdlog::info("Bark notifier initialized with bark_id {}", bark_id_);
 }
 
 bool BarkNotifierImpl::notify(const std::string &msg) {
