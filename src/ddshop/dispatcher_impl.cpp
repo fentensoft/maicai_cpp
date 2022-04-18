@@ -16,31 +16,42 @@ DispatcherImpl::DispatcherImpl()
 
 DispatcherImpl::~DispatcherImpl() { stop(); }
 
+void DispatcherImpl::spawn() {
+  running_ = true;
+  cart_thread_ = std::thread([this]() { cartWorker(); });
+  reserve_time_thread_ = std::thread([this]() { reserveTimeWorker(); });
+  order_threads_.clear();
+  order_threads_.reserve(ORDER_THREADS_NUM);
+  for (int i = 0; i < ORDER_THREADS_NUM; ++i) {
+    order_threads_.emplace_back([this, i](){
+      orderWorker(i);
+    });
+  }
+}
+
 void DispatcherImpl::start() {
   if (!session_) {
     spdlog::error("Please init session first");
     return;
   }
   if (schedules_.empty() && !running_) {
-    running_ = true;
-    cart_thread_ = std::thread([this]() { cartWorker(); });
-    reserve_time_thread_ = std::thread([this]() { reserveTimeWorker(); });
-    order_thread_ = std::thread([this]() { orderWorker(); });
+    spawn();
   }
   while (nopaid_scan_running_) {
     if (!schedules_.empty()) {
+      bool should_start = false;
       for (auto &it : schedules_) {
-        auto in_period = isTimeInPeriod(it);
-        if (!running_ && in_period) {
-          spdlog::info("Schedule start");
-          running_ = true;
-          cart_thread_ = std::thread([this]() { cartWorker(); });
-          reserve_time_thread_ = std::thread([this]() { reserveTimeWorker(); });
-          order_thread_ = std::thread([this]() { orderWorker(); });
-        } else if (running_ && !in_period) {
-          spdlog::info("Schedule stop");
-          pause();
+        if (isTimeInPeriod(it)) {
+          should_start = true;
+          break;
         }
+      }
+      if (!running_ && should_start) {
+        spdlog::info("Schedule start");
+        spawn();
+      } else if (running_ && !should_start) {
+        spdlog::info("Schedule stop");
+        pause();
       }
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -107,12 +118,13 @@ void DispatcherImpl::reserveTimeWorker() {
   spdlog::info("ReserveTimeWorker stopped");
 }
 
-void DispatcherImpl::orderWorker() {
+void DispatcherImpl::orderWorker(int i) {
   std::random_device rd;
   std::mt19937 ra(rd());
   std::uniform_int_distribution<> dist(100, 300);
   auto sleep_start = std::chrono::steady_clock::time_point::min();
   uint64_t should_sleep_ms = 0;
+  spdlog::info("Order worker {} started", i);
   while (running_) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - sleep_start)
@@ -128,25 +140,25 @@ void DispatcherImpl::orderWorker() {
         std::uniform_int_distribution<size_t> dist_idx(
             0, reserve_times.size() - 1);
         size_t idx = dist_idx(ra);
-        spdlog::debug("OrderWorker trying {} reserve time {}-{}", idx,
+        spdlog::debug("Order worker {} trying {} reserve time {}-{}", i, idx,
                       reserve_times[idx].first, reserve_times[idx].second);
         ddshop::Order order;
         int code = -1;
         if (session_->checkOrder(reserve_times[idx], order, code)) {
           if (session_->doOrder(order, code)) {
-            spdlog::info("Order success");
+            spdlog::info("Order worker {} success", i);
             notify("抢菜成功！快去支付！！");
           } else {
             if (code == 5001 || code == 5003 || code == 5004) {
               force_order_run_ = true;
             }
-            spdlog::warn("OrderWorker do order failed");
+            spdlog::warn("Order worker {} do order failed", i);
           }
         } else {
           if (code == 5001 || code == 5003 || code == 5004) {
             force_order_run_ = true;
           }
-          spdlog::warn("OrderWorker check order failed");
+          spdlog::warn("Order worker {} check order failed", i);
         }
       }
       should_sleep_ms = dist(ra);
@@ -154,7 +166,7 @@ void DispatcherImpl::orderWorker() {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
-  spdlog::info("OrderWorker stopped");
+  spdlog::info("Order worker {} stopped", i);
 }
 
 void DispatcherImpl::initBarkNotifier(const std::string &bark_id) {
@@ -205,9 +217,12 @@ void DispatcherImpl::pause() {
   if (reserve_time_thread_.joinable()) {
     reserve_time_thread_.join();
   }
-  if (order_thread_.joinable()) {
-    order_thread_.join();
+  for (auto &it : order_threads_) {
+    if (it.joinable()) {
+      it.join();
+    }
   }
+  order_threads_.clear();
 }
 
 bool DispatcherImpl::isTimeInPeriod(const Schedule &schedule) {

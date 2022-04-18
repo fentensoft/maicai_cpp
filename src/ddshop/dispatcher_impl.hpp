@@ -27,6 +27,8 @@ class DispatcherImpl : public Dispatcher {
   void setSchedule(const std::vector<Schedule> &) override;
 
  private:
+  const uint8_t ORDER_THREADS_NUM = 3;
+
   std::shared_ptr<Session> session_;
   std::shared_ptr<notification::BarkNotifier> bark_notifier_;
   std::atomic<bool> running_;
@@ -34,16 +36,17 @@ class DispatcherImpl : public Dispatcher {
   std::atomic<bool> force_order_run_;
   std::thread cart_thread_;
   std::thread reserve_time_thread_;
-  std::thread order_thread_;
+  std::vector<std::thread> order_threads_;
   std::thread unpaid_thread_;
 
   std::vector<Schedule> schedules_;
 
   void cartWorker();
   void reserveTimeWorker();
-  void orderWorker();
+  void orderWorker(int i);
   void unpaidWorker();
 
+  void spawn();
   void pause();
 
   static bool isTimeInPeriod(const Schedule &schedule);
