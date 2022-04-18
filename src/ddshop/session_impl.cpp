@@ -50,6 +50,10 @@ SessionImpl::SessionImpl(SessionConfig config)
   base_params_.emplace("device_token", "");
   base_params_.emplace("nars", "");
   base_params_.emplace("sesi", "");
+
+  client_.set_connection_timeout(std::chrono::milliseconds(500));
+  client_.set_read_timeout(std::chrono::milliseconds(2000));
+  client_.set_write_timeout(std::chrono::milliseconds(2000));
 }
 
 std::shared_ptr<Session> Session::buildSession(SessionConfig config) {
