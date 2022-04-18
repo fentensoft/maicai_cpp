@@ -109,9 +109,9 @@ int main(int argc, char **argv) {
                                       it["start"][1].get<uint64_t>());
       tmp.stop_time = std::make_pair(it["stop"][0].get<uint64_t>(),
                                      it["stop"][1].get<uint64_t>());
-      spdlog::info("Schedule task {:02d}:{:02d} to {:02d}:{:02d}", tmp.start_time.first,
-                   tmp.start_time.second, tmp.stop_time.first,
-                   tmp.stop_time.second);
+      spdlog::info("Schedule task {:02d}:{:02d} to {:02d}:{:02d}",
+                   tmp.start_time.first, tmp.start_time.second,
+                   tmp.stop_time.first, tmp.stop_time.second);
       schedules.emplace_back(std::move(tmp));
     }
     if (!schedules.empty()) {

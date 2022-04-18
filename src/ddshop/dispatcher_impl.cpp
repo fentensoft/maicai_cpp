@@ -71,7 +71,6 @@ void DispatcherImpl::cartWorker() {
                         std::chrono::steady_clock::now() - sleep_start)
                         .count();
     if (duration >= should_sleep_ms) {
-      spdlog::debug("CartWorker refresh cart");
       if (!session_->cartCheckAll()) {
         should_sleep_ms = 300;
       } else {
@@ -81,7 +80,6 @@ void DispatcherImpl::cartWorker() {
           should_sleep_ms = dist(ra);
         }
       }
-      spdlog::debug("CartWorker should sleep {}ms", should_sleep_ms);
       sleep_start = std::chrono::steady_clock::now();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -100,10 +98,8 @@ void DispatcherImpl::reserveTimeWorker() {
                         std::chrono::steady_clock::now() - sleep_start)
                         .count();
     if (duration >= should_sleep_ms) {
-      spdlog::debug("ReserveTimeWorker refresh reserve time");
       session_->refreshReserveTime();
       should_sleep_ms = dist(ra);
-      spdlog::debug("ReserveTimeWorker should sleep {}ms", should_sleep_ms);
       sleep_start = std::chrono::steady_clock::now();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -126,33 +122,34 @@ void DispatcherImpl::orderWorker() {
       duration = std::numeric_limits<long>::max();
     }
     if (duration >= should_sleep_ms) {
-      spdlog::debug("OrderWorker trigger");
       std::vector<std::pair<uint64_t, uint64_t>> reserve_times;
       session_->getReserveTime(reserve_times);
-      if (reserve_times.empty()) {
-        spdlog::debug("OrderWorker No available reserve time");
-      } else {
+      if (!reserve_times.empty()) {
         std::uniform_int_distribution<size_t> dist_idx(
             0, reserve_times.size() - 1);
         size_t idx = dist_idx(ra);
         spdlog::debug("OrderWorker trying {} reserve time {}-{}", idx,
                       reserve_times[idx].first, reserve_times[idx].second);
         ddshop::Order order;
-        if (session_->checkOrder(reserve_times[idx], order)) {
-          if (session_->doOrder(order)) {
-            // TODO
-            spdlog::info("OrderWorker order success");
+        int code = -1;
+        if (session_->checkOrder(reserve_times[idx], order, code)) {
+          if (session_->doOrder(order, code)) {
+            spdlog::info("Order success");
             notify("抢菜成功！快去支付！！");
-            running_ = false;
           } else {
+            if (code == 5001 || code == 5003 || code == 5004) {
+              force_order_run_ = true;
+            }
             spdlog::warn("OrderWorker do order failed");
           }
         } else {
+          if (code == 5001 || code == 5003 || code == 5004) {
+            force_order_run_ = true;
+          }
           spdlog::warn("OrderWorker check order failed");
         }
       }
       should_sleep_ms = dist(ra);
-      spdlog::debug("OrderWorker should sleep {}ms", should_sleep_ms);
       sleep_start = std::chrono::steady_clock::now();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -183,12 +180,10 @@ void DispatcherImpl::unpaidWorker() {
                         std::chrono::steady_clock::now() - sleep_start)
                         .count();
     if (session_ && duration >= should_sleep_ms) {
-      spdlog::debug("UnpaidWorker trigger");
       if (session_->hasUnpaidOrder()) {
         notify("您有未支付的订单，请前往支付！！");
       }
       should_sleep_ms = dist(ra) * 1000;
-      spdlog::debug("UnpaidWorker should sleep {}ms", should_sleep_ms);
       sleep_start = std::chrono::steady_clock::now();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));

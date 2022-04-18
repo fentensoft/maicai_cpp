@@ -5,13 +5,13 @@
 namespace ddshop {
 
 bool SessionImpl::checkOrder(const std::pair<uint64_t, uint64_t> &reserve_time,
-                             Order &order) {
+                             Order &order, int &code) {
   nlohmann::json package;
 
   {
     std::lock_guard<std::mutex> lck(cart_mutex_);
     if (!cart_data_.is_object() || !cart_data_.contains("products")) {
-      spdlog::debug("No available cart data");
+      code = -1;
       return false;
     }
     package.emplace_back(cart_data_);
@@ -41,8 +41,10 @@ bool SessionImpl::checkOrder(const std::pair<uint64_t, uint64_t> &reserve_time,
     auto ret_json = nlohmann::json::parse(resp->body, nullptr, false);
     if (ret_json.is_discarded()) {
       spdlog::error("Failed to parse check order data");
+      code = -1;
       return false;
     }
+    code = ret_json["code"];
     if (!ret_json["success"]) {
       // TODO
       spdlog::warn("Check order return failed");
@@ -86,14 +88,15 @@ bool SessionImpl::checkOrder(const std::pair<uint64_t, uint64_t> &reserve_time,
     return true;
   } else {
     spdlog::warn("Failed check order");
+    code = -1;
     return false;
   }
 }
 
-bool SessionImpl::doOrder(Order &order) {
+bool SessionImpl::doOrder(Order &order, int &code) {
   if (!order.check_order_data.is_object() ||
       !order.check_order_data.contains("price")) {
-    spdlog::debug("No available check order data");
+    code = -1;
     return false;
   }
 
@@ -114,21 +117,24 @@ bool SessionImpl::doOrder(Order &order) {
     if (ret_json.is_discarded()) {
       spdlog::error("Failed to parse add new order data");
       spdlog::debug(resp->body);
+      code = -1;
       return false;
     }
     spdlog::debug("Submit order resp {}", resp->body);
+    code = ret_json["code"];
     if (ret_json["success"]) {
       spdlog::info("Submit order success");
       return true;
     } else {
       // TODO
       spdlog::warn("Submit order failed, code {}, msg {}",
-                   ret_json["code"].get<int64_t>(), ret_json["msg"]);
+                   ret_json["code"].get<int>(), ret_json["msg"]);
       return false;
     }
   } else {
     // TODO
     spdlog::error("Failed to submit order");
+    code = -1;
     return false;
   }
 }

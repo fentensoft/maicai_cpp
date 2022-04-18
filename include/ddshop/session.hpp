@@ -50,12 +50,12 @@ class Session {
   virtual bool getCart() = 0;
   virtual bool refreshReserveTime() = 0;
   virtual void getReserveTime(std::vector<std::pair<uint64_t, uint64_t>> &) = 0;
-  virtual bool checkOrder(const std::pair<uint64_t, uint64_t> &, Order &) = 0;
-  virtual bool doOrder(Order &) = 0;
+  virtual bool checkOrder(const std::pair<uint64_t, uint64_t> &, Order &,
+                          int &) = 0;
+  virtual bool doOrder(Order &, int &) = 0;
   virtual bool hasUnpaidOrder() = 0;
 
   static std::shared_ptr<Session> buildSession(SessionConfig config);
-
 };
 
 }  // namespace ddshop

@@ -17,8 +17,8 @@ class SessionImpl : public Session {
   bool refreshReserveTime() override;
   void getReserveTime(std::vector<std::pair<uint64_t, uint64_t>> &out) override;
   bool checkOrder(const std::pair<uint64_t, uint64_t> &reserve_time,
-                  Order &order) override;
-  bool doOrder(Order &order) override;
+                  Order &order, int &code) override;
+  bool doOrder(Order &order, int &code) override;
   bool hasUnpaidOrder() override;
 
  private:

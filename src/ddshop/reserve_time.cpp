@@ -8,7 +8,6 @@ bool SessionImpl::refreshReserveTime() {
   {
     std::lock_guard<std::mutex> lck(cart_mutex_);
     if (!cart_data_.is_object() || !cart_data_.contains("products")) {
-      spdlog::debug("No available cart data");
       return false;
     }
     products.emplace_back(cart_data_["products"]);
