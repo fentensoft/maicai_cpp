@@ -1,5 +1,6 @@
 {
     "channel": "APP",
+    "pay_type": "ALIPAY",
     "cookie": "COOKIE",
     "bark_id": "BARK_ID",
     "address_keyword": "ADDR_KEYWORD",
