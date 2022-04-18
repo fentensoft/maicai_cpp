@@ -172,7 +172,7 @@ void DispatcherImpl::notify(const std::string &msg) {
 void DispatcherImpl::unpaidWorker() {
   std::random_device rd;
   std::mt19937 ra(rd());
-  std::uniform_int_distribution<> dist(25, 35);
+  std::uniform_int_distribution<> dist(55, 65);
   auto sleep_start = std::chrono::steady_clock::time_point::min();
   uint64_t should_sleep_ms = 0;
   while (nopaid_scan_running_) {

@@ -46,7 +46,7 @@ class DispatcherImpl : public Dispatcher {
 
   void pause();
 
-  bool isTimeInPeriod(const Schedule &schedule);
+  static bool isTimeInPeriod(const Schedule &schedule);
 
   void notify(const std::string &);
 };
