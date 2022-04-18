@@ -1,0 +1,12 @@
+{
+    "channel": "APP",
+    "cookie": "COOKIE",
+    "bark_id": "BARK_ID",
+    "address_keyword": "ADDR_KEYWORD",
+    "schedules": [
+        {
+            "start": [5, 59],
+            "stop": [6, 3]
+        }
+    ]
+}
