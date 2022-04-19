@@ -50,7 +50,7 @@ bool SessionImpl::getCart() {
 
     nlohmann::json out;
     if (ret_json["data"]["new_order_product_list"].empty()) {
-      spdlog::warn("No valid product");
+      spdlog::info("No valid product");
       {
         std::lock_guard<std::mutex> lck(cart_mutex_);
         cart_data_.swap(out);

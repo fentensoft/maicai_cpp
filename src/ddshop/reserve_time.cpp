@@ -45,6 +45,9 @@ bool SessionImpl::refreshReserveTime() {
     spdlog::info("Found {} available reserve time", out.size());
     {
       std::lock_guard<std::mutex> lck(cart_mutex_);
+      if (!cart_data_.is_object() || !cart_data_.contains("products")) {
+        return false;
+      }
       reserve_time_.swap(out);
     }
     return true;
