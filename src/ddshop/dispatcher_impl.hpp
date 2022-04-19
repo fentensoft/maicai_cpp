@@ -27,7 +27,7 @@ class DispatcherImpl : public Dispatcher {
   void setSchedule(const std::vector<Schedule> &) override;
 
  private:
-  const uint8_t ORDER_THREADS_NUM = 3;
+  const uint8_t ORDER_THREADS_NUM = 2;
 
   std::shared_ptr<Session> session_;
   std::shared_ptr<notification::BarkNotifier> bark_notifier_;

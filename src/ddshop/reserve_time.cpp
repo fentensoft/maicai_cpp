@@ -20,8 +20,8 @@ bool SessionImpl::refreshReserveTime() {
 
   auto resp = client_.Post("/order/getMultiReserveTime", base_headers_, params);
   if (resp.error() == httplib::Error::Success) {
-    auto ret_json = nlohmann::json::parse(resp->body, nullptr, false);
-    if (ret_json.is_discarded()) {
+    nlohmann::json ret_json;
+    if (!ensureBasicResp(resp->body, ret_json)) {
       spdlog::error("Failed parse getReserveTime data");
       spdlog::debug(resp->body);
       return false;

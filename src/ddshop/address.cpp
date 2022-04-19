@@ -17,9 +17,8 @@ void SessionImpl::getAddresses(std::vector<Address> &result) {
   auto resp = tmp_client.Get("/api/v1/user/address/", params, headers);
 
   if (resp.error() == httplib::Error::Success) {
-    auto ret_data = nlohmann::json::parse(resp->body, nullptr, false);
-    if (ret_data.is_discarded() || !ret_data["success"]) {
-      spdlog::debug("getAddressed: {}", resp->body);
+    nlohmann::json ret_data;
+    if (!ensureBasicResp(resp->body, ret_data)) {
       throw std::runtime_error("Failed parsing address data");
     }
     result.clear();

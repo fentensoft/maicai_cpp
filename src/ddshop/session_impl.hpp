@@ -33,6 +33,8 @@ class SessionImpl : public Session {
   std::mutex cart_mutex_;
   nlohmann::json cart_data_;
   std::vector<std::pair<uint64_t, uint64_t>> reserve_time_;
+
+  bool ensureBasicResp(const std::string &, nlohmann::json &);
 };
 
 }  // namespace ddshop

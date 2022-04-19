@@ -10,9 +10,8 @@ void SessionImpl::initUser() {
   headers.emplace("Host", "sunquan.api.ddxq.mobi");
   auto resp = tmp_client.Get("/api/v1/user/detail/", base_params_, headers);
   if (resp.error() == httplib::Error::Success) {
-    auto ret_data = nlohmann::json::parse(resp->body, nullptr, false);
-    if (ret_data.is_discarded() || !ret_data["success"]) {
-      spdlog::debug("initUser: {}", resp->body);
+    nlohmann::json ret_data;
+    if (!ensureBasicResp(resp->body, ret_data)) {
       throw std::runtime_error("Failed parsing user data");
     }
     std::string uid = ret_data["data"]["user_info"]["id"];

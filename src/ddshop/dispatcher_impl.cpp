@@ -23,9 +23,7 @@ void DispatcherImpl::spawn() {
   order_threads_.clear();
   order_threads_.reserve(ORDER_THREADS_NUM);
   for (int i = 0; i < ORDER_THREADS_NUM; ++i) {
-    order_threads_.emplace_back([this, i](){
-      orderWorker(i);
-    });
+    order_threads_.emplace_back([this, i]() { orderWorker(i); });
   }
 }
 

@@ -38,8 +38,8 @@ bool SessionImpl::checkOrder(const std::pair<uint64_t, uint64_t> &reserve_time,
   spdlog::info("Checking order");
   auto resp = client_.Post("/order/checkOrder", base_headers_, params);
   if (resp.error() == httplib::Error::Success) {
-    auto ret_json = nlohmann::json::parse(resp->body, nullptr, false);
-    if (ret_json.is_discarded()) {
+    nlohmann::json ret_json;
+    if (!ensureBasicResp(resp->body, ret_json)) {
       spdlog::error("Failed to parse check order data");
       code = -1;
       return false;
@@ -113,10 +113,9 @@ bool SessionImpl::doOrder(Order &order, int &code) {
   spdlog::info("Submitting order");
   auto resp = client_.Post("/order/addNewOrder", base_headers_, params);
   if (resp.error() == httplib::Error::Success) {
-    auto ret_json = nlohmann::json::parse(resp->body, nullptr, false);
-    if (ret_json.is_discarded()) {
+    nlohmann::json ret_json;
+    if (!ensureBasicResp(resp->body, ret_json)) {
       spdlog::error("Failed to parse add new order data");
-      spdlog::debug(resp->body);
       code = -1;
       return false;
     }
@@ -124,6 +123,11 @@ bool SessionImpl::doOrder(Order &order, int &code) {
     code = ret_json["code"];
     if (ret_json["success"]) {
       spdlog::info("Submit order success");
+      {
+        std::lock_guard<std::mutex> lck(cart_mutex_);
+        cart_data_.clear();
+        reserve_time_.clear();
+      }
       return true;
     } else {
       // TODO
@@ -147,8 +151,8 @@ bool SessionImpl::hasUnpaidOrder() {
   spdlog::info("Fetching unpaid order list");
   auto resp = client_.Post("/order/notPayList", base_headers_, base_params_);
   if (resp.error() == httplib::Error::Success) {
-    auto ret_json = nlohmann::json::parse(resp->body, nullptr, false);
-    if (ret_json.is_discarded()) {
+    nlohmann::json ret_json;
+    if (!ensureBasicResp(resp->body, ret_json)) {
       spdlog::error("Failed parsing no pay list data");
       return false;
     }

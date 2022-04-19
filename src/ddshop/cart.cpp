@@ -36,15 +36,15 @@ bool SessionImpl::getCart() {
   spdlog::info("Getting cart products");
   auto resp = client_.Get("/cart/index", params, base_headers_);
   if (resp.error() == httplib::Error::Success) {
-    auto ret_json = nlohmann::json::parse(resp->body, nullptr, false);
-    if (ret_json.is_discarded()) {
+    nlohmann::json ret_json;
+    if (!ensureBasicResp(resp->body, ret_json)) {
       spdlog::error("Failed parsing json when getting cart");
       return false;
     }
     if (!ret_json["success"]) {
       // TODO
-      spdlog::warn("Failed get cart, code {}, msg {}", ret_json["code"],
-                   ret_json["msg"]);
+      spdlog::warn("Failed get cart, code {}, msg {}",
+                   ret_json["code"].get<int64_t>(), ret_json["msg"]);
       return false;
     }
 
@@ -54,6 +54,7 @@ bool SessionImpl::getCart() {
       {
         std::lock_guard<std::mutex> lck(cart_mutex_);
         cart_data_.swap(out);
+        reserve_time_.clear();
       }
       return true;
     }

@@ -56,6 +56,32 @@ SessionImpl::SessionImpl(SessionConfig config)
   client_.set_write_timeout(std::chrono::milliseconds(2000));
 }
 
+bool SessionImpl::ensureBasicResp(const std::string &str, nlohmann::json &out) {
+  out = nlohmann::json::parse(str, nullptr, false);
+  if (out.is_discarded()) {
+    spdlog::error("JSON parse error");
+    spdlog::debug("{}", str);
+    return false;
+  }
+  if (!out.contains("success") || !out["success"].is_boolean()) {
+    spdlog::error("JSON invalid: no success field");
+    spdlog::debug("{}", str);
+    return false;
+  }
+  if (!out["success"] && (!out.contains("code") || !out["code"].is_number() ||
+                          !out.contains("msg") || !out["msg"].is_string())) {
+    spdlog::error("JSON not success, but invalid code or msg");
+    spdlog::debug("{}", str);
+    return false;
+  }
+  if (out["success"] && !out.contains("data")) {
+    spdlog::error("JSON success, but no data");
+    spdlog::debug("{}", str);
+    return false;
+  }
+  return true;
+}
+
 std::shared_ptr<Session> Session::buildSession(SessionConfig config) {
   return std::make_shared<SessionImpl>(std::move(config));
 }
