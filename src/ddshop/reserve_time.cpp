@@ -27,8 +27,11 @@ bool SessionImpl::refreshReserveTime() {
       return false;
     }
     if (ret_json["data"].empty() || ret_json["data"][0]["time"].empty()) {
-      // TODO
       spdlog::warn("No available reserve time");
+      {
+        std::lock_guard<std::mutex> lck(cart_mutex_);
+        reserve_time_.clear();
+      }
       return false;
     }
     std::vector<std::pair<uint64_t, uint64_t>> out;
