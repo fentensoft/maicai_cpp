@@ -42,7 +42,6 @@ bool SessionImpl::getCart() {
       return false;
     }
     if (!ret_json["success"]) {
-      // TODO
       spdlog::warn("Failed get cart, code {}, msg {}",
                    ret_json["code"].get<int64_t>(), ret_json["msg"]);
       return false;

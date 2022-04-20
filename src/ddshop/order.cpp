@@ -46,7 +46,13 @@ bool SessionImpl::checkOrder(const std::pair<uint64_t, uint64_t> &reserve_time,
     }
     code = ret_json["code"];
     if (!ret_json["success"]) {
-      // TODO
+      if (code == 5001 || code == 5003) {
+        std::lock_guard<std::mutex> lck(cart_mutex_);
+        cart_data_.clear();
+        reserve_time_.clear();
+      } else if (code == 5004) {
+        reserve_time_.clear();
+      }
       spdlog::warn("Check order return failed");
       return false;
     }
@@ -130,13 +136,18 @@ bool SessionImpl::doOrder(Order &order, int &code) {
       }
       return true;
     } else {
-      // TODO
+      if (code == 5001 || code == 5003) {
+        std::lock_guard<std::mutex> lck(cart_mutex_);
+        cart_data_.clear();
+        reserve_time_.clear();
+      } else if (code == 5004) {
+        reserve_time_.clear();
+      }
       spdlog::warn("Submit order failed, code {}, msg {}",
                    ret_json["code"].get<int>(), ret_json["msg"]);
       return false;
     }
   } else {
-    // TODO
     spdlog::error("Failed to submit order");
     code = -1;
     return false;

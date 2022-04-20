@@ -79,6 +79,10 @@ void DispatcherImpl::cartWorker() {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - sleep_start)
                         .count();
+    if (force_order_run_) {
+      force_order_run_ = false;
+      duration = std::numeric_limits<long>::max();
+    }
     if (duration >= should_sleep_ms) {
       if (!session_->cartCheckAll()) {
         should_sleep_ms = 300;
@@ -127,10 +131,6 @@ void DispatcherImpl::orderWorker(int i) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - sleep_start)
                         .count();
-    if (force_order_run_) {
-      force_order_run_ = false;
-      duration = std::numeric_limits<long>::max();
-    }
     if (duration >= should_sleep_ms) {
       std::vector<std::pair<uint64_t, uint64_t>> reserve_times;
       session_->getReserveTime(reserve_times);
@@ -147,13 +147,13 @@ void DispatcherImpl::orderWorker(int i) {
             spdlog::info("Order worker {} success", i);
             notify("抢菜成功！快去支付！！");
           } else {
-            if (code == 5001 || code == 5003 || code == 5004) {
+            if (code == 5001 || code == 5003) {
               force_order_run_ = true;
             }
             spdlog::warn("Order worker {} do order failed", i);
           }
         } else {
-          if (code == 5001 || code == 5003 || code == 5004) {
+          if (code == 5001 || code == 5003) {
             force_order_run_ = true;
           }
           spdlog::warn("Order worker {} check order failed", i);
