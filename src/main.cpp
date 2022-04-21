@@ -8,8 +8,15 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
+#include "ui.hpp"
 
 std::shared_ptr<ddshop::Dispatcher> dispatcher;
+
+int main(int argc, char **argv) {
+  QApplication app(argc, argv);
+  MainWindow main_window(argc, argv);
+  return app.exec();
+}
 
 void registerSignalHandler() {
   auto handler = [](int sig) {
@@ -22,7 +29,7 @@ void registerSignalHandler() {
   std::signal(SIGHUP, handler);
 }
 
-int main(int argc, char **argv) {
+int main1(int argc, char **argv) {
   auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
   console_sink->set_level(spdlog::level::info);
 

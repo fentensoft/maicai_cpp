@@ -10,9 +10,7 @@
 namespace ddshop {
 
 DispatcherImpl::DispatcherImpl()
-    : running_(false), nopaid_scan_running_(true), force_order_run_(false) {
-  unpaid_thread_ = std::thread([this]() { unpaidWorker(); });
-}
+    : running_(false), nopaid_scan_running_(false), force_order_run_(false) {}
 
 DispatcherImpl::~DispatcherImpl() { stop(); }
 
@@ -27,14 +25,8 @@ void DispatcherImpl::spawn() {
   }
 }
 
-void DispatcherImpl::start() {
-  if (!session_) {
-    spdlog::error("Please init session first");
-    return;
-  }
-  if (schedules_.empty() && !running_) {
-    spawn();
-  }
+void DispatcherImpl::scheduleWorker() {
+  spdlog::info("Scheduler worker started");
   while (nopaid_scan_running_) {
     if (!schedules_.empty()) {
       bool should_start = false;
@@ -54,22 +46,43 @@ void DispatcherImpl::start() {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
+  spdlog::info("Scheduler worker stopped");
+}
+
+void DispatcherImpl::start() {
+  if (!session_) {
+    spdlog::error("Please init session first");
+    return;
+  }
+  if (!nopaid_scan_running_) {
+    nopaid_scan_running_ = true;
+    unpaid_thread_ = std::thread([this]() { unpaidWorker(); });
+  }
+  if (schedules_.empty()) {
+    spawn();
+  } else {
+    schedule_thread_ = std::thread([this]() { scheduleWorker(); });
+  }
 }
 
 void DispatcherImpl::stop() {
   nopaid_scan_running_ = false;
   pause();
+  if (schedule_thread_.joinable()) {
+    schedule_thread_.join();
+  }
   if (unpaid_thread_.joinable()) {
     unpaid_thread_.join();
   }
 }
 
-void DispatcherImpl::initSession(const SessionConfig &config) {
+bool DispatcherImpl::initSession(const SessionConfig &config) {
   session_ = Session::buildSession(config);
-  session_->initUser();
+  return session_->initUser();
 }
 
 void DispatcherImpl::cartWorker() {
+  spdlog::info("Cart worker started");
   std::random_device rd;
   std::mt19937 ra(rd());
   std::uniform_int_distribution<> dist(10000, 20000);
@@ -97,10 +110,11 @@ void DispatcherImpl::cartWorker() {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
-  spdlog::info("CartWorker stopped");
+  spdlog::info("Cart worker stopped");
 }
 
 void DispatcherImpl::reserveTimeWorker() {
+  spdlog::info("Reserve time worker started");
   std::random_device rd;
   std::mt19937 ra(rd());
   std::uniform_int_distribution<> dist(200, 1000);
@@ -117,10 +131,11 @@ void DispatcherImpl::reserveTimeWorker() {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
-  spdlog::info("ReserveTimeWorker stopped");
+  spdlog::info("Reserve time worker stopped");
 }
 
 void DispatcherImpl::orderWorker(int i) {
+  spdlog::info("Order worker started");
   std::random_device rd;
   std::mt19937 ra(rd());
   std::uniform_int_distribution<> dist(100, 300);
@@ -178,9 +193,13 @@ void DispatcherImpl::notify(const std::string &msg) {
     spdlog::info("Sending bark notification {}", msg);
     bark_notifier_->notify(std::forward<const std::string &>(msg));
   }
+  if (success_cb_) {
+    success_cb_(std::forward<const std::string &>(msg));
+  }
 }
 
 void DispatcherImpl::unpaidWorker() {
+  spdlog::info("Unpaid worker started");
   std::random_device rd;
   std::mt19937 ra(rd());
   std::uniform_int_distribution<> dist(55, 65);
@@ -201,11 +220,20 @@ void DispatcherImpl::unpaidWorker() {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
-  spdlog::info("UnpaidWorker stopped");
+  spdlog::info("Unpaid worker stopped");
 }
 
 void DispatcherImpl::setSchedule(const std::vector<Schedule> &schedules) {
   schedules_ = schedules;
+  for (auto &it : schedules) {
+    spdlog::info("Scheduling {:02d}:{:02d} - {:02d}:{:02d}",
+                 it.start_time.first, it.start_time.second, it.stop_time.first,
+                 it.stop_time.second);
+  }
+}
+
+void DispatcherImpl::onSuccess(std::function<void(const std::string &)> cb) {
+  success_cb_ = std::move(cb);
 }
 
 void DispatcherImpl::pause() {

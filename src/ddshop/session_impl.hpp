@@ -9,7 +9,7 @@ namespace ddshop {
 class SessionImpl : public Session {
  public:
   explicit SessionImpl(SessionConfig config);
-  void initUser() override;
+  bool initUser() override;
   void getAddresses(std::vector<Address> &result) override;
   void setAddress(const Address &addr) override;
   bool cartCheckAll() override;

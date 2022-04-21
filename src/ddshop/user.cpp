@@ -3,7 +3,7 @@
 
 namespace ddshop {
 
-void SessionImpl::initUser() {
+bool SessionImpl::initUser() {
   auto headers = base_headers_;
   auto tmp_client = httplib::Client("https://sunquan.api.ddxq.mobi");
   headers.erase("Host");
@@ -12,14 +12,18 @@ void SessionImpl::initUser() {
   if (resp.error() == httplib::Error::Success) {
     nlohmann::json ret_data;
     if (!ensureBasicResp(resp->body, ret_data)) {
-      throw std::runtime_error("Failed parsing user data");
+      spdlog::error("Failed parsing user data");
+      return false;
     }
     std::string uid = ret_data["data"]["user_info"]["id"];
+
     spdlog::info("User uid: {}", uid);
     base_headers_.emplace("ddmc-uid", uid);
     base_params_.emplace("uid", uid);
+    return true;
   } else {
-    throw std::runtime_error("Failed initializing user");
+    spdlog::error("Failed initializing user");
+    return false;
   }
 }
 

@@ -43,7 +43,7 @@ class Session {
 
   virtual ~Session() = default;
 
-  virtual void initUser() = 0;
+  virtual bool initUser() = 0;
   virtual void getAddresses(std::vector<Address> &) = 0;
   virtual void setAddress(const Address &) = 0;
   virtual bool cartCheckAll() = 0;

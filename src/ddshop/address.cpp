@@ -19,12 +19,11 @@ void SessionImpl::getAddresses(std::vector<Address> &result) {
   if (resp.error() == httplib::Error::Success) {
     nlohmann::json ret_data;
     if (!ensureBasicResp(resp->body, ret_data)) {
-      throw std::runtime_error("Failed parsing address data");
+      spdlog::error("Failed parsing address data");
     }
     result.clear();
     if (ret_data["data"]["valid_address"].empty()) {
       spdlog::error("No valid address found");
-      throw std::runtime_error("No valid address");
     }
     for (auto &it : ret_data["data"]["valid_address"]) {
       Address address;
@@ -34,7 +33,9 @@ void SessionImpl::getAddresses(std::vector<Address> &result) {
       address.latitude = it["location"]["location"][1];
       address.user_name = it["user_name"];
       address.mobile = it["mobile"];
-      address.address = it["location"]["address"];
+      address.address = it["location"]["address"].get<std::string>() + " " +
+                        it["location"]["name"].get<std::string>() + " " +
+                        it["addr_detail"].get<std::string>();
       address.station_id = it["station_id"];
       spdlog::debug("Parse address {} {} {} {}", address.user_name,
                     address.mobile, address.address, address.station_id);
@@ -42,7 +43,7 @@ void SessionImpl::getAddresses(std::vector<Address> &result) {
     }
 
   } else {
-    throw std::runtime_error("Failed get addersses");
+    spdlog::error("Failed get addersses");
   }
 }
 

@@ -20,11 +20,13 @@ class DispatcherImpl : public Dispatcher {
 
   std::shared_ptr<Session> getSession() override { return session_; };
 
-  void initSession(const SessionConfig &) override;
+  bool initSession(const SessionConfig &) override;
 
   void initBarkNotifier(const std::string &) override;
 
   void setSchedule(const std::vector<Schedule> &) override;
+
+  void onSuccess(std::function<void(const std::string &)>) override;
 
  private:
   const uint8_t ORDER_THREADS_NUM = 2;
@@ -38,13 +40,17 @@ class DispatcherImpl : public Dispatcher {
   std::thread reserve_time_thread_;
   std::vector<std::thread> order_threads_;
   std::thread unpaid_thread_;
+  std::thread schedule_thread_;
 
   std::vector<Schedule> schedules_;
+
+  std::function<void(const std::string &)> success_cb_;
 
   void cartWorker();
   void reserveTimeWorker();
   void orderWorker(int i);
   void unpaidWorker();
+  void scheduleWorker();
 
   void spawn();
   void pause();

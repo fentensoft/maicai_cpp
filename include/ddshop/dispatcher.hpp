@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -20,13 +21,15 @@ class Dispatcher {
 
   virtual void stop() = 0;
 
-  virtual void initSession(const SessionConfig &) = 0;
+  virtual bool initSession(const SessionConfig &) = 0;
 
   virtual void initBarkNotifier(const std::string &) = 0;
 
   virtual std::shared_ptr<Session> getSession() = 0;
 
   virtual void setSchedule(const std::vector<Schedule> &) = 0;
+
+  virtual void onSuccess(std::function<void(const std::string &)>) = 0;
 
   static std::shared_ptr<Dispatcher> makeDispatcher();
 };
