@@ -53,7 +53,7 @@ class Session {
   virtual bool checkOrder(const std::pair<uint64_t, uint64_t> &, Order &,
                           int &) = 0;
   virtual bool doOrder(Order &, int &) = 0;
-  virtual bool hasUnpaidOrder() = 0;
+  virtual int hasUnpaidOrder() = 0;
 
   static std::shared_ptr<Session> buildSession(SessionConfig config);
 };

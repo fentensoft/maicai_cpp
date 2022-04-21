@@ -26,6 +26,11 @@ bool SessionImpl::refreshReserveTime() {
       spdlog::debug(resp->body);
       return false;
     }
+    if (!ret_json["success"]) {
+      spdlog::warn("Refresh reserve time failed, code {}, msg {}",
+                   ret_json["code"].get<int64_t>(), ret_json["msg"]);
+      return false;
+    }
     if (ret_json["data"].empty() || ret_json["data"][0]["time"].empty()) {
       spdlog::warn("No available reserve time");
       {

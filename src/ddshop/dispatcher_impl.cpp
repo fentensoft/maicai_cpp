@@ -88,7 +88,7 @@ void DispatcherImpl::cartWorker() {
         should_sleep_ms = 300;
       } else {
         if (!session_->getCart()) {
-          should_sleep_ms = 2000;
+          should_sleep_ms = dist(ra) - 9000;
         } else {
           should_sleep_ms = dist(ra);
         }
@@ -145,7 +145,8 @@ void DispatcherImpl::orderWorker(int i) {
         if (session_->checkOrder(reserve_times[idx], order, code)) {
           if (session_->doOrder(order, code)) {
             spdlog::info("Order worker {} success", i);
-            notify("抢菜成功！快去支付！！");
+            notify("抢菜成功，抢到" + std::to_string(code) +
+                   "件商品！快去支付！！");
           } else {
             if (code == 5001 || code == 5003) {
               force_order_run_ = true;
@@ -190,8 +191,10 @@ void DispatcherImpl::unpaidWorker() {
                         std::chrono::steady_clock::now() - sleep_start)
                         .count();
     if (session_ && duration >= should_sleep_ms) {
-      if (session_->hasUnpaidOrder()) {
-        notify("您有未支付的订单，请前往支付！！");
+      auto unpaid = session_->hasUnpaidOrder();
+      if (unpaid > 0) {
+        notify("您有" + std::to_string(unpaid) +
+               "笔未支付的订单，请前往支付！！");
       }
       should_sleep_ms = dist(ra) * 1000;
       sleep_start = std::chrono::steady_clock::now();

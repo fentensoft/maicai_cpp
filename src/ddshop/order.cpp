@@ -129,6 +129,7 @@ bool SessionImpl::doOrder(Order &order, int &code) {
     code = ret_json["code"];
     if (ret_json["success"]) {
       spdlog::info("Submit order success");
+      code = order.cart_data["products"].size();
       {
         std::lock_guard<std::mutex> lck(cart_mutex_);
         cart_data_.clear();
@@ -154,10 +155,10 @@ bool SessionImpl::doOrder(Order &order, int &code) {
   }
 }
 
-bool SessionImpl::hasUnpaidOrder() {
+int SessionImpl::hasUnpaidOrder() {
   if (base_params_.find("uid") == base_params_.end()) {
     spdlog::debug("Not login");
-    return false;
+    return 0;
   }
   spdlog::info("Fetching unpaid order list");
   auto resp = client_.Post("/order/notPayList", base_headers_, base_params_);
@@ -165,16 +166,16 @@ bool SessionImpl::hasUnpaidOrder() {
     nlohmann::json ret_json;
     if (!ensureBasicResp(resp->body, ret_json)) {
       spdlog::error("Failed parsing no pay list data");
-      return false;
+      return 0;
     }
     if (!ret_json["success"]) {
       spdlog::error("Fetch no pay list data return failed");
-      return false;
+      return 0;
     }
-    return !ret_json["data"]["order_list"].empty();
+    return static_cast<int>(ret_json["data"]["order_list"].size());
   } else {
     spdlog::error("Failed fetching no pay list data");
-    return false;
+    return 0;
   }
 }
 

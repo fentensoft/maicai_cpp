@@ -19,7 +19,7 @@ class SessionImpl : public Session {
   bool checkOrder(const std::pair<uint64_t, uint64_t> &reserve_time,
                   Order &order, int &code) override;
   bool doOrder(Order &order, int &code) override;
-  bool hasUnpaidOrder() override;
+  int hasUnpaidOrder() override;
 
  private:
   const std::string API_VERSION = "9.49.2";
@@ -34,7 +34,7 @@ class SessionImpl : public Session {
   nlohmann::json cart_data_;
   std::vector<std::pair<uint64_t, uint64_t>> reserve_time_;
 
-  bool ensureBasicResp(const std::string &, nlohmann::json &);
+  static bool ensureBasicResp(const std::string &, nlohmann::json &);
 };
 
 }  // namespace ddshop
